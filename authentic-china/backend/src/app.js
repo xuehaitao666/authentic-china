@@ -31,8 +31,8 @@ const io = new Server(server, {
 // 挂载消息中间件
 setupSocketIO(io);
 
-// 开启自执行建表策略与服务监听 (注意这里监听的是 server 而非 app)
-sequelize.sync({ alter: true }).then(() => {
+// 开启自执行建表策略与服务监听 (移除了可能导致重复生成索引的 alter: true)
+sequelize.sync().then(() => {
   console.log('Database synced seamlessly.');
   server.listen(PORT, () => {
     console.log(`Backend Server is running on http://localhost:${PORT}`);

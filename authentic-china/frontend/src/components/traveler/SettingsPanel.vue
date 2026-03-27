@@ -9,8 +9,26 @@
       <div class="rounded-sm overflow-hidden" style="border: 1px solid rgba(90,80,65,0.1); background: #FFFDF9">
         <!-- 头像区 -->
         <div class="p-8 flex gap-6 items-center" style="border-bottom: 1px solid rgba(90,80,65,0.08)">
-          <div class="relative">
-            <img :src="user?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?fit=crop&w=200'" class="w-20 h-20 rounded-full object-cover" style="border: 2px solid rgba(156,39,39,0.2)" />
+          <div class="relative group cursor-pointer" @click="triggerAvatarUpload">
+            <img :src="user?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?fit=crop&w=200'" class="w-20 h-20 rounded-full object-cover transition-all group-hover:brightness-75 shadow-lg" style="border: 2px solid rgba(156,39,39,0.2)" />
+            
+            <!-- 悬浮提示 -->
+            <div class="absolute inset-0 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 text-white backdrop-blur-[1px]">
+              <svg class="w-5 h-5 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span class="text-[8px] font-serif tracking-widest text-center">易容改面</span>
+            </div>
+
+            <!-- 隐藏的文件选择器 -->
+            <input 
+              type="file" 
+              ref="avatarInput" 
+              class="hidden" 
+              accept="image/*" 
+              @change="onAvatarFileSelected"
+            />
           </div>
           <div>
             <h3 class="font-serif text-xl tracking-widest" style="color: #2A2318">{{ user?.username }}</h3>
@@ -44,15 +62,66 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import axios from 'axios'
 import { useAuth } from '../../composables/useAuth'
 import { useFootprints } from '../../composables/useFootprints'
 
 const props = defineProps({ user: Object, token: String })
-const { clearAuth } = useAuth()
+const { clearAuth, updateUser } = useAuth()
 const { history, favorites } = useFootprints()
 const router = useRouter()
+
+const avatarInput = ref(null)
+const isUploading = ref(false)
+
+// 触发文件选择器
+const triggerAvatarUpload = () => {
+  if (!isUploading.value) {
+    avatarInput.value?.click()
+  }
+}
+
+// 选择并上传头像
+const onAvatarFileSelected = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('image', file)
+
+  isUploading.value = true
+  try {
+    // 1. 发起上传请求
+    const uploadRes = await axios.post('http://localhost:3000/api/v1/upload/image', formData, {
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${props.token}`
+      }
+    })
+
+    if (uploadRes.data.code === 200) {
+      const newAvatarUrl = uploadRes.data.data.url
+
+      // 2. 同步更新个人档案
+      await axios.patch('http://localhost:3000/api/v1/auth/profile', 
+        { avatar: newAvatarUrl }, 
+        { headers: { 'Authorization': `Bearer ${props.token}` } }
+      )
+
+      // 3. 刷新前端状态
+      updateUser({ avatar: newAvatarUrl })
+      alert('官家提示：您已易容成功，名籍已更新。')
+    }
+  } catch (error) {
+    console.error('Avatar update error:', error)
+    alert('官家提示：修缮印章失败，请稍后再试。')
+  } finally {
+    isUploading.value = false
+    e.target.value = ''
+  }
+}
 
 const infoRows = computed(() => [
   { label: '身份印章', value: '游方客 (Tourist)' },

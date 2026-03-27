@@ -22,6 +22,7 @@ const Friendship = sequelize.define('Friendship', {
   updatedAt: 'updated_at',
   indexes: [
     {
+      name: 'unique_friendship',
       unique: true,
       fields: ['user_id', 'friend_id']
     }

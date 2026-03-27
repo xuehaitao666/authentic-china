@@ -7,7 +7,29 @@
         <div class="absolute inset-0 opacity-10 bg-[url('https://images.unsplash.com/photo-1508804185872-d7badad00f7d?w=1200')] bg-cover bg-center mix-blend-overlay"></div>
         <div class="absolute inset-0 bg-gradient-to-r from-ink-base to-transparent"></div>
         <div class="relative z-10 flex items-center gap-6">
-          <img :src="user?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?fit=crop&w=200'" class="w-20 h-20 rounded-full border-2 border-china-red object-cover shadow-xl" />
+          <!-- 动态头像上传区域 -->
+          <div class="relative group cursor-pointer" @click="triggerAvatarUpload">
+            <img :src="user?.avatar || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?fit=crop&w=200'" class="w-20 h-20 rounded-full border-2 border-china-red object-cover shadow-xl transition-all group-hover:brightness-75" />
+            
+            <!-- 水墨风悬浮遮罩 -->
+            <div class="absolute inset-0 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 text-white backdrop-blur-[1px]">
+              <svg class="w-6 h-6 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span class="text-[9px] font-serif tracking-widest">易容改面</span>
+            </div>
+            
+            <!-- 隐藏的文件选择器 -->
+            <input 
+              type="file" 
+              ref="avatarInput" 
+              class="hidden" 
+              accept="image/*" 
+              @change="onAvatarFileSelected"
+            />
+          </div>
+
           <div>
             <p class="text-white/60 tracking-[0.4em] text-xs font-sans mb-1">欢迎归来，东家</p>
             <h2 class="text-4xl font-serif tracking-[0.2em] mb-2">{{ user?.username }}<span class="ml-3 text-china-red">·</span>主家</h2>
@@ -64,9 +86,62 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
+import { useAuth } from '../../composables/useAuth'
 
 const props = defineProps({ user: Object, token: String })
 const emit = defineEmits(['navigate'])
+
+const { updateUser } = useAuth()
+const avatarInput = ref(null)
+const isUploading = ref(false)
+
+// 触发文件选择
+const triggerAvatarUpload = () => {
+  if (!isUploading.value) {
+    avatarInput.value?.click()
+  }
+}
+
+// 处理文件选择后的动作 (上传+更新)
+const onAvatarFileSelected = async (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+
+  // 1. 上传图片
+  const formData = new FormData()
+  formData.append('image', file)
+  
+  isUploading.value = true
+  try {
+    // 上传到服务端
+    const uploadRes = await axios.post('http://localhost:3000/api/v1/upload/image', formData, {
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${props.token}`
+      }
+    })
+
+    if (uploadRes.data.code === 200) {
+      const newAvatarUrl = uploadRes.data.data.url
+      
+      // 2. 更新个人资料
+      await axios.patch('http://localhost:3000/api/v1/auth/profile', 
+        { avatar: newAvatarUrl }, 
+        { headers: { 'Authorization': `Bearer ${props.token}` } }
+      )
+
+      // 3. 更新本地状态 (全局响应式)
+      updateUser({ avatar: newAvatarUrl })
+      alert('容貌修缮成功！')
+    }
+  } catch (error) {
+    console.error('Avatar upload failed:', error)
+    alert('官家提示：名册修缮失败，请稍后再试。')
+  } finally {
+    isUploading.value = false
+    e.target.value = '' // 清除 input 状态以便下次选择
+  }
+}
 
 const stats = ref([
   {
