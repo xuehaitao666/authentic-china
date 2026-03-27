@@ -185,11 +185,12 @@ const renderMap = async () => {
     chartInstance.hideLoading()
     chartInstance.setOption(option)
     
-    // 将地图上省份区块或散点的点击统一与 router 连接
+    // 省份色块 → 省级卷轴页；城市散点 → 城市详情页
     chartInstance.on('click', (params) => {
-      const targetName = params.name
-      if (targetName) {
-        router.push(`/city/${targetName}`)
+      if (params.componentType === 'geo') {
+        if (params.name) router.push(`/province/${params.name}`)
+      } else if (params.seriesType === 'effectScatter') {
+        if (params.name) router.push(`/city/${params.name}`)
       }
     })
     

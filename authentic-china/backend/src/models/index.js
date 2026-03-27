@@ -6,6 +6,7 @@ const Experience = require('./Experience');
 const Order = require('./Order');
 const Friendship = require('./Friendship');
 const Message = require('./Message');
+const Post = require('./Post');
 
 // User <-> Friendship
 User.hasMany(Friendship, { foreignKey: 'user_id', as: 'initiatedFriendships' });
@@ -49,6 +50,10 @@ Order.belongsTo(User, { foreignKey: 'host_id', as: 'host' });
 City.hasMany(Order, { foreignKey: 'city_id', as: 'orders' });
 Order.belongsTo(City, { foreignKey: 'city_id', as: 'city' });
 
+// User <-> Post (Traveler Stories)
+User.hasMany(Post, { foreignKey: 'user_id', as: 'stories' });
+Post.belongsTo(User, { foreignKey: 'user_id', as: 'author' });
+
 module.exports = {
   sequelize,
   User,
@@ -57,5 +62,6 @@ module.exports = {
   Experience,
   Order,
   Friendship,
-  Message
+  Message,
+  Post
 };

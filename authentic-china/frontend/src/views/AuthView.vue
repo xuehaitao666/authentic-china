@@ -144,7 +144,7 @@ const submitAuth = async () => {
          if (data.data.user.role === 'host') {
             router.push('/host/dashboard')
          } else {
-            router.push('/tourist/map')
+            router.push('/traveler/chronicle')
          }
       }
     }

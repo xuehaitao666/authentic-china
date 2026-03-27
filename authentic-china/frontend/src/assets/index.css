@@ -4,7 +4,8 @@
 
 @layer utilities {
   .glass-panel {
-    @apply bg-white/60 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+    /* 故宫红/浓墨 调色方案中的毛玻璃 (去除现代蓝色阴影) */
+    @apply bg-white/60 backdrop-blur-md border border-white/30 shadow-[0_8px_32px_0_rgba(42,35,24,0.06)];
   }
 }
 

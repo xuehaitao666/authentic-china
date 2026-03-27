@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import AuthView from '../views/AuthView.vue'
 import HomeView from '../views/HomeView.vue'
 import HostDashboardView from '../views/HostDashboardView.vue'
+import TravelerDashboardView from '../views/TravelerDashboardView.vue'
+import ProvinceView from '../views/ProvinceView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL || '/'),
@@ -22,6 +24,16 @@ const router = createRouter({
       component: HostDashboardView
     },
     {
+      path: '/traveler/chronicle',
+      name: 'travelerChronicle',
+      component: TravelerDashboardView
+    },
+    {
+      path: '/province/:name',
+      name: 'province',
+      component: ProvinceView
+    },
+    {
       path: '/city/:id',
       name: 'city',
       component: () => import('../views/CityDetailView.vue')
@@ -34,17 +46,19 @@ router.beforeEach((to, from, next) => {
   let user = null
   try {
     user = JSON.parse(localStorage.getItem('auth_user'))
-  } catch (e) {}
+  } catch (e) { }
 
   if (to.path === '/' && token && user) {
-     if (user.role === 'host') next('/host/dashboard')
-     else next('/tourist/map')
+    if (user.role === 'host') next('/host/dashboard')
+    else next('/traveler/chronicle')
   } else if (to.path !== '/' && !token) {
-     next('/')
+    next('/')
   } else if (to.path.startsWith('/host') && user?.role !== 'host') {
-     next('/tourist/map')
+    next('/traveler/chronicle')
+  } else if (to.path.startsWith('/traveler') && user?.role === 'host') {
+    next('/host/dashboard')
   } else {
-     next()
+    next()
   }
 })
 

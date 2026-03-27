@@ -21,6 +21,11 @@ export function useAuth() {
     localStorage.removeItem('auth_user')
   }
 
+  const updateUser = (updatedData) => {
+    user.value = { ...user.value, ...updatedData }
+    localStorage.setItem('auth_user', JSON.stringify(user.value))
+  }
+
   const roleTextMap = {
     'tourist': '神游',
     'host': '主家',
@@ -36,6 +41,7 @@ export function useAuth() {
     currentRole,
     myRoleText,
     setAuth,
-    clearAuth
+    clearAuth,
+    updateUser
   }
 }

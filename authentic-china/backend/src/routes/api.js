@@ -5,10 +5,13 @@ const authController = require('../controllers/authController');
 const cityController = require('../controllers/cityController'); // 引进城池画卷总管
 const hostController = require('../controllers/hostController');
 const uploadController = require('../controllers/uploadController');
+const postController = require('../controllers/postController');
+const provinceController = require('../controllers/provinceController');
 
 // 鉴权通行模块
 router.post('/auth/register', authController.register);
 router.post('/auth/login', authController.login);
+router.patch('/auth/profile', authController.updateProfile);
 
 // 名城大观查阅通道
 router.get('/cities/:name', cityController.getCityDetail);
@@ -33,5 +36,17 @@ router.get('/host/profile', hostController.getMyResidentProfiles);
 // Upload Route (图片上传)
 // ========================
 router.post('/upload/image', uploadController.uploadImage);
+
+// ========================
+// Social Post Routes (锦囊故事)
+// ========================
+router.post('/social/posts', postController.createPost);
+router.get('/social/posts', postController.getPosts);
+
+// ========================
+// Provincial Routes (卷轴舆地)
+// ========================
+router.get('/provinces/:name/geojson', provinceController.getGeoJSON);
+router.get('/provinces/:name/cities', provinceController.getProvinceCities);
 
 module.exports = router;
