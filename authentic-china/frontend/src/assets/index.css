@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/60 backdrop-blur-md border border-white/40 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+}
+
+/* Scroll Unfold Transition (国风画卷徐徐翻转过场) */
+.scroll-unfold-enter-active,
+.scroll-unfold-leave-active {
+  transition: all 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+  transform-origin: center top;
+}
+.scroll-unfold-enter-from {
+  opacity: 0;
+  transform: perspective(1000px) rotateX(-10deg) scale(0.98);
+  filter: blur(10px);
+}
+.scroll-unfold-leave-to {
+  opacity: 0;
+  transform: perspective(1000px) rotateX(10deg) scale(1.02);
+  filter: blur(10px);
+}
