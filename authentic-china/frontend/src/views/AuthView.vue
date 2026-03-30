@@ -104,6 +104,7 @@ import { ref, computed } from 'vue'
 import axios from 'axios'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
+import { useToastStore } from '../store/toast'
 
 const activeMode = ref('tourist') 
 const isRegister = ref(false)
@@ -111,6 +112,7 @@ const isLoading = ref(false)
 const form = ref({ username: '', password: '' })
 const { setAuth } = useAuth()
 const router = useRouter()
+const toastStore = useToastStore()
 
 const hintText = computed(() => {
   if (activeMode.value === 'tourist') return '山河广阔，行者无疆。'
@@ -134,22 +136,32 @@ const submitAuth = async () => {
     
     if (data.code === 200 || data.code === 201) {
       if (isRegister.value) {
-         alert('名籍印记已造！请重新输入过关。')
+         toastStore.showToast('success', '名籍印记已造！请重新输入过关')
          isRegister.value = false 
          form.value.password = '' 
       } else if (data.data.token) {
          setAuth(data.data.token, data.data.user)
          
-         // 核心网关分流逻辑
-         if (data.data.user.role === 'host') {
-            router.push('/host/dashboard')
-         } else {
-            router.push('/traveler/chronicle')
-         }
+         // 根据身份决定诗意文案
+         const poeticMessage = data.data.user.role === 'host' 
+            ? '府门开启，迎八方客' 
+            : '踏遍山河，寻地道味'
+            
+         // 触发全屏水墨晕染
+         toastStore.triggerSplash(poeticMessage)
+         
+         // 在墨迹最浓郁的 0.5 秒处执行跳转
+         setTimeout(() => {
+           if (data.data.user.role === 'host') {
+              router.push('/host/dashboard')
+           } else {
+              router.push('/traveler/chronicle')
+           }
+         }, 500)
       }
     }
   } catch (error) {
-    alert(error.response?.data?.message || '风雪阻路，通关印卷核查失败')
+    toastStore.showToast('error', error.response?.data?.message || '风雪阻路，通关印卷核查失败')
   } finally {
     isLoading.value = false
   }

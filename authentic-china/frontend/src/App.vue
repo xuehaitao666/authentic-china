@@ -1,5 +1,6 @@
 <template>
-  <!-- 藏书囊挂饰 (呼出藏经阁：足迹与收藏) 仅在游方模式显示 -->
+  <div :class="{'logout-grayscale': toastStore.isLogoutActive, 'logout-scroll-up': toastStore.isLogoutActive}" class="min-h-screen">
+    <!-- 藏书囊挂饰 (呼出藏经阁：足迹与收藏) 仅在游方模式显示 -->
   <button 
     v-if="route.path !== '/' && user?.role !== 'host'"
     @click="isFootprintsOpen = true"
@@ -62,8 +63,14 @@
   <!-- 藏经阁组件挂载 -->
   <FootprintsDrawer :is-open="isFootprintsOpen" @close="isFootprintsOpen = false" @request-share="handleRequestShare" />
 
-  <!-- 知音飞书组件挂载 -->
-  <SocialDrawer :is-open="isSocialOpen" :pending-share="globalPendingShare" @close="isSocialOpen = false" @clear-share="globalPendingShare = null" />
+    <!-- 知音飞书组件挂载 -->
+    <SocialDrawer :is-open="isSocialOpen" :pending-share="globalPendingShare" @close="isSocialOpen = false" @clear-share="globalPendingShare = null" />
+  </div>
+
+  <!-- 全局水墨反馈层 -->
+  <InkToast />
+  <FullInkSplash />
+  <LogoutOverlay />
 </template>
 
 <script setup>
@@ -73,6 +80,10 @@ import { useAuth } from './composables/useAuth'
 import { useChat } from './composables/useChat'
 import FootprintsDrawer from './components/FootprintsDrawer.vue'
 import SocialDrawer from './components/SocialDrawer.vue'
+import InkToast from './components/InkToast.vue'
+import FullInkSplash from './components/FullInkSplash.vue'
+import LogoutOverlay from './components/LogoutOverlay.vue'
+import { useToastStore } from './store/toast'
 
 const route = useRoute()
 const router = useRouter()
@@ -83,6 +94,7 @@ const globalPendingShare = ref(null)
 
 const { isAuth, user, myRoleText, clearAuth } = useAuth()
 const { initSocket, disconnectSocket } = useChat()
+const toastStore = useToastStore()
 
 // 监控登录态，连通天地风铃阵 (Socket.IO)
 watch(isAuth, (val) => {
@@ -97,10 +109,18 @@ const handleRequestShare = (item) => {
 }
 
 const doLogout = () => {
-  if (confirm("阁下确定要卸甲退朝，退离这神州大地么？")) {
+  // 触发视觉仪式：画卷褪色与收起
+  toastStore.startLogoutSequence()
+  
+  // 等待收卷动画进行到一半 (约 0.8s) 时开始清空状态并准备跳转
+  setTimeout(() => {
     clearAuth()
-    router.replace('/')
-  }
+    
+    // 动画结束 (1.5s) 后完成跳转
+    setTimeout(() => {
+      router.replace('/')
+    }, 700)
+  }, 800)
 }
 </script>
 
