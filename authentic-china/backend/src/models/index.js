@@ -7,6 +7,9 @@ const Order = require('./Order');
 const Friendship = require('./Friendship');
 const Message = require('./Message');
 const Post = require('./Post');
+const Group = require('./Group');
+const GroupMember = require('./GroupMember');
+const GroupMessage = require('./GroupMessage');
 
 // User <-> Friendship
 User.hasMany(Friendship, { foreignKey: 'user_id', as: 'initiatedFriendships' });
@@ -54,6 +57,28 @@ Order.belongsTo(City, { foreignKey: 'city_id', as: 'city' });
 User.hasMany(Post, { foreignKey: 'user_id', as: 'stories' });
 Post.belongsTo(User, { foreignKey: 'user_id', as: 'author' });
 
+// --- 新增: 雅集 (Group Chat) 关联 ---
+
+// User <-> Group (Creator)
+User.hasMany(Group, { foreignKey: 'creator_id', as: 'createdGroups', onDelete: 'CASCADE' });
+Group.belongsTo(User, { foreignKey: 'creator_id', as: 'creator' });
+
+// User <-> Group (Membership through GroupMember)
+User.belongsToMany(Group, { through: GroupMember, foreignKey: 'user_id', otherKey: 'group_id', as: 'memberGroups', onDelete: 'CASCADE' });
+Group.belongsToMany(User, { through: GroupMember, foreignKey: 'group_id', otherKey: 'user_id', as: 'members', onDelete: 'CASCADE' });
+
+// GroupMember associations for direct querying
+GroupMember.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+GroupMember.belongsTo(Group, { foreignKey: 'group_id', as: 'group' });
+
+// Group <-> GroupMessage
+Group.hasMany(GroupMessage, { foreignKey: 'group_id', as: 'messages', onDelete: 'CASCADE' });
+GroupMessage.belongsTo(Group, { foreignKey: 'group_id', as: 'group' });
+
+// User <-> GroupMessage (Sender)
+User.hasMany(GroupMessage, { foreignKey: 'sender_id', as: 'groupMessagesSent', onDelete: 'CASCADE' });
+GroupMessage.belongsTo(User, { foreignKey: 'sender_id', as: 'sender' });
+
 module.exports = {
   sequelize,
   User,
@@ -63,5 +88,8 @@ module.exports = {
   Order,
   Friendship,
   Message,
-  Post
+  Post,
+  Group,
+  GroupMember,
+  GroupMessage
 };

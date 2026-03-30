@@ -7,6 +7,7 @@ const hostController = require('../controllers/hostController');
 const uploadController = require('../controllers/uploadController');
 const postController = require('../controllers/postController');
 const provinceController = require('../controllers/provinceController');
+const groupController = require('../controllers/groupController');
 
 // 鉴权通行模块
 router.post('/auth/register', authController.register);
@@ -22,6 +23,10 @@ router.get('/social/search', friendController.searchUsers);
 router.post('/social/friends', friendController.addFriend);
 router.get('/social/friends/:userId', friendController.getFriends);
 router.get('/social/messages/:userId/:friendId', friendController.getMessages);
+router.get('/social/groups/:id/messages', groupController.getGroupMessages);
+router.get('/social/groups/:id/members', groupController.getGroupMembers);
+router.get('/social/groups/user/:userId', groupController.getUserGroups);
+router.post('/social/groups', groupController.createGroup);
 
 // 预约与信用交易模块
 router.post('/orders', orderController.createOrder);

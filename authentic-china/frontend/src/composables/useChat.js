@@ -7,6 +7,7 @@ let socket = null;
 const onlineUsers = ref([]);
 const messages = ref([]); 
 const currentChatFriendId = ref(null);
+const currentGroupId = ref(null);
 
 export function useChat() {
   const { user, isAuth } = useAuth();
@@ -38,6 +39,26 @@ export function useChat() {
     socket.on('message_sent', (msg) => {
       if (currentChatFriendId.value && msg.receiver_id === currentChatFriendId.value) {
         messages.value.push(msg);
+      }
+    });
+
+    // --- 雅集 (Group Chat) 监听 ---
+    
+    // 收到雅集传卷
+    socket.on('receive_group_message', (msg) => {
+      if (currentGroupId.value && msg.group_id === parseInt(currentGroupId.value)) {
+        messages.value.push(msg);
+      }
+    });
+
+    // 雅集传卷错误处理
+    socket.on('error_message', (err) => {
+      console.error('Socket Error:', err.message);
+      // 可触发全局 Toast
+      if (window.dispatchEvent) {
+         window.dispatchEvent(new CustomEvent('ink-toast', { 
+           detail: { message: err.message, type: 'error' } 
+         }));
       }
     });
   };
@@ -77,6 +98,45 @@ export function useChat() {
     socket.emit('send_message', payload);
   };
 
+  // --- 雅集 (Group Chat) 核心函数 ---
+
+  // 1. 进入雅集，同步往日旧笺
+  const joinGroup = async (groupId) => {
+    currentGroupId.value = groupId;
+    currentChatFriendId.value = null; // 切换到群聊，清空好友选中
+    messages.value = [];
+    
+    if (socket) {
+      socket.emit('join_group', groupId);
+    }
+    
+    await loadGroupHistory(groupId);
+  };
+
+  // 2. 翻阅雅集历史旧笺
+  const loadGroupHistory = async (groupId, page = 1) => {
+    try {
+      const res = await axios.get(`http://localhost:3000/api/v1/social/groups/${groupId}/messages?page=${page}`);
+      if (res.data.success) {
+        messages.value = res.data.data;
+      }
+    } catch (e) {
+      console.error('翻阅雅集卷轴失败:', e);
+    }
+  };
+
+  // 3. 雅集投笔传笺
+  const sendGroupMessage = (groupId, content, type = 'text') => {
+    if (!socket || !user.value?.id) return;
+
+    socket.emit('send_group_message', {
+      sender_id: user.value.id,
+      group_id: groupId,
+      content,
+      type
+    });
+  };
+
   return {
     socket,
     onlineUsers,
@@ -85,6 +145,10 @@ export function useChat() {
     disconnectSocket,
     loadHistory,
     sendMessage,
-    currentChatFriendId
+    currentChatFriendId,
+    currentGroupId,
+    joinGroup,
+    loadGroupHistory,
+    sendGroupMessage
   };
-}
+};

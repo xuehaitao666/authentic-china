@@ -4,8 +4,56 @@
 
 @layer utilities {
   .glass-panel {
-    /* 故宫红/浓墨 调色方案中的毛玻璃 (去除现代蓝色阴影) */
+    /* 故宫红/浓墨 调色方案中的毛玻璃 */
     @apply bg-white/60 backdrop-blur-md border border-white/30 shadow-[0_8px_32px_0_rgba(42,35,24,0.06)];
+  }
+
+  /* --- 水墨滚动条 (Ink Scrollbar) --- */
+  .ink-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .ink-scrollbar::-webkit-scrollbar-track {
+    background: rgba(244, 241, 236, 0.3); /* 宣纸背景色 */
+  }
+  .ink-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(26, 28, 32, 0.15); /* 浅墨色 */
+    border-radius: 10px;
+    transition: background 0.3s ease;
+  }
+  .ink-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(156, 39, 39, 0.4); /* 朱砂红悬浮 */
+  }
+
+  /* --- 水墨滤镜 (Ink Filter) --- */
+  .ink-filter {
+    filter: sepia(0.2) grayscale(0.3) contrast(1.1) brightness(0.95);
+    @apply transition-all duration-300;
+  }
+  .ink-filter:hover {
+    filter: sepia(0.1) grayscale(0.1) contrast(1.1);
+  }
+
+  /* --- 纸质阴影 (Paper Shadows) --- */
+  .shadow-paper {
+    box-shadow: 
+      2px 2px 10px rgba(0,0,0,0.03),
+      0 0 1px rgba(0,0,0,0.1);
+  }
+
+  /* 墨色印记阴影 */
+  .shadow-ink {
+    box-shadow: 
+      0 10px 40px -10px rgba(0,0,0,0.15),
+      0 0 1px rgba(0,0,0,0.2);
+  }
+
+  /* 隐藏滚动条工具类 */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }
 
