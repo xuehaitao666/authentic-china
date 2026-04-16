@@ -49,21 +49,30 @@
               <div v-if="isUploading" class="text-[10px] tracking-widest text-china-red animate-pulse font-serif">墨屏待干...</div>
             </div>
 
-            <!-- 打卡点 -->
+            <!-- 打卡城池 (下拉选择) -->
             <div class="space-y-3">
               <label class="block text-xs tracking-[0.3em] font-serif" style="color: #7A6E62">打卡城池</label>
               <div class="relative">
-                <input 
-                  v-model="postForm.location"
-                  type="text" 
-                  placeholder="如：西安"
-                  class="w-full bg-transparent border-0 border-b border-ink-light/10 focus:ring-0 focus:border-china-red/40 transition-all text-sm font-serif tracking-widest py-3"
+                <select 
+                  v-model="postForm.city_id"
+                  class="w-full bg-transparent border-0 border-b border-ink-light/10 focus:ring-0 focus:border-china-red/40 transition-all text-sm font-serif tracking-widest py-3 appearance-none cursor-pointer"
                   style="color: #2A2318"
-                />
-                <svg class="absolute right-0 top-3 w-4 h-4 text-ink-light/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                >
+                  <option :value="null" style="color: #9A8B78">选择打卡城池...</option>
+                  <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }} ({{ city.province }})</option>
+                </select>
+                <svg class="absolute right-0 top-4 w-3 h-3 text-ink-light/30 pointer-events-none" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                 </svg>
               </div>
+              <!-- 自定义地点补充 -->
+              <input 
+                v-model="postForm.location"
+                type="text" 
+                placeholder="具体地点 (可选)"
+                class="w-full bg-transparent border-0 border-b border-ink-light/5 focus:ring-0 focus:border-china-red/20 transition-all text-[11px] font-serif tracking-widest py-1"
+                style="color: #9A8B78"
+              />
             </div>
           </div>
 
@@ -95,40 +104,27 @@
           <p class="font-serif text-sm tracking-[0.4em]" style="color: #B0A090">暂无锦囊，等候您的第一笔行记</p>
         </div>
 
-        <div v-else v-for="post in posts" :key="post.id" 
-             class="group relative bg-[#FFFDF9] border border-ink-light/10 p-8 rounded-sm hover:shadow-xl transition-all duration-700"
-             style="box-shadow: 0 4px 20px rgba(0,0,0,0.02)">
+        <div v-else class="space-y-12">
+          <PostCard 
+            v-for="post in posts" 
+            :key="post.id" 
+            :post="post" 
+            :current-user="user"
+            :token="token"
+            @delete="handleDeletePost"
+            @update="handlePostUpdate"
+          />
           
-          <!-- 作者信息与发布时间 -->
-          <div class="flex items-center justify-between mb-8 pb-4 border-b border-ink-light/5">
-            <div class="flex items-center gap-3">
-              <img :src="post.author?.avatar_url || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?fit=crop&w=80'" 
-                   class="w-10 h-10 rounded-full object-cover border-2 border-paper-base" />
-              <div>
-                <p class="text-sm font-serif tracking-widest" style="color: #2A2318">{{ post.author?.username }}</p>
-                <p class="text-[10px] tracking-widest font-sans" style="color: #9A8B78">{{ formatDate(post.created_at) }}</p>
-              </div>
-            </div>
-            <div v-if="post.location" class="flex items-center gap-1.5 px-3 py-1 bg-paper-base/60 rounded-full border border-ink-light/10">
-              <svg class="w-3 h-3 text-china-red" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" /></svg>
-              <span class="text-[10px] tracking-widest font-serif" style="color: #7A6E62">{{ post.location }}</span>
-            </div>
-          </div>
-
-          <!-- 内容主体 -->
-          <div class="space-y-6">
-            <p class="text-[17px] font-serif leading-loose tracking-widest whitespace-pre-wrap" style="color: #2A2318">{{ post.content }}</p>
-            
-            <div v-if="post.image_url" class="relative rounded-sm overflow-hidden" style="max-height: 500px">
-              <img :src="post.image_url" class="w-full h-full object-top" style="object-fit: contain" />
-            </div>
-          </div>
-
-          <!-- 底部装饰 -->
-          <div class="mt-8 flex justify-end">
-            <div class="px-4 py-1 text-[10px] font-sans tracking-[0.3em] opacity-30 select-none" style="color: #9A8B78">
-              Authentic China · Chronicle
-            </div>
+          <!-- 加载更多 -->
+          <div v-if="hasMore" class="flex justify-center pt-8">
+            <button 
+              @click="loadMore"
+              :disabled="isLoadingMore"
+              class="text-xs font-serif tracking-[0.3em] text-ink-light hover:text-china-red transition-colors flex items-center gap-2"
+            >
+              <span v-if="isLoadingMore" class="animate-spin inline-block w-3 h-3 rounded-full border border-current border-t-transparent"></span>
+              {{ isLoadingMore ? '加载中' : '展开更多画卷' }}
+            </button>
           </div>
         </div>
       </div>
@@ -141,41 +137,98 @@
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { useAuth } from '../../composables/useAuth'
+import PostCard from '../PostCard.vue'
+import { getCities } from '../../api/city'
+import { createPost, getPosts, deletePost } from '../../api/social'
 
 const props = defineProps({ user: Object })
 const { token } = useAuth()
 
 const posts = ref([])
+const cities = ref([])
 const isLoading = ref(true)
+const isLoadingMore = ref(false)
 const isPublishing = ref(false)
 const isUploading = ref(false)
 const imagePreview = ref('')
+const page = ref(1)
+const hasMore = ref(true)
 
 const postForm = ref({
   content: '',
   image_url: '',
-  location: ''
+  location: '',
+  city_id: null
 })
 
-const fetchPosts = async () => {
-  isLoading.value = true
+const fetchCities = async () => {
   try {
-    const { data } = await axios.get('http://localhost:3000/api/v1/social/posts', {
-      headers: { Authorization: `Bearer ${token.value}` }
-    })
-    if (data.code === 200) {
-      posts.value = data.data
+    const res = await getCities()
+    if (res.code === 200) {
+      cities.value = res.data
+    }
+  } catch (e) {
+    console.error('获取城市列表失败:', e)
+  }
+}
+
+const fetchPosts = async (reset = false) => {
+  if (reset) {
+    page.value = 1
+    posts.value = []
+    isLoading.value = true
+  } else {
+    isLoadingMore.value = true
+  }
+
+  try {
+    const res = await getPosts({ 
+      userId: props.user?.id, 
+      page: page.value, 
+      limit: 10 
+    }, token.value)
+    
+    if (res.code === 200) {
+      const newList = res.data.list
+      posts.value = [...posts.value, ...newList]
+      hasMore.value = posts.value.length < res.data.total
     }
   } catch (e) {
     console.error('获取锦囊失败:', e)
   } finally {
     isLoading.value = false
+    isLoadingMore.value = false
   }
 }
 
-onMounted(() => {
+const loadMore = () => {
+  page.value++
   fetchPosts()
+}
+
+onMounted(() => {
+  fetchCities()
+  fetchPosts(true)
 })
+
+const handlePostUpdate = (updatedPost) => {
+  const index = posts.value.findIndex(p => p.id === updatedPost.id)
+  if (index !== -1) {
+    posts.value[index] = updatedPost
+  }
+}
+
+const handleDeletePost = async (id) => {
+  if (!confirm('确定要焚毁此锦囊？此举不可撤回。')) return
+  try {
+    const res = await deletePost(id, token.value)
+    if (res.code === 200) {
+      posts.value = posts.value.filter(p => p.id !== id)
+    }
+  } catch (e) {
+    alert('焚毁失败:' + (e.response?.data?.message || e.message))
+  }
+}
 
 const handleFileSelect = async (event) => {
   const file = event.target.files?.[0]
@@ -211,16 +264,12 @@ const handlePublish = async () => {
   
   isPublishing.value = true
   try {
-    const { data } = await axios.post('http://localhost:3000/api/v1/social/posts', postForm.value, {
-      headers: { Authorization: `Bearer ${token.value}` }
-    })
+    const res = await createPost(postForm.value, token.value)
     
-    if (data.code === 200) {
-      // 发布成功，重置表单
-      postForm.value = { content: '', image_url: '', location: '' }
+    if (res.code === 200) {
+      postForm.value = { content: '', image_url: '', location: '', city_id: null }
       imagePreview.value = ''
-      // 重新拉取列表
-      await fetchPosts()
+      await fetchPosts(true)
     }
   } catch (e) {
     alert('刻印失败，请稍后重试')
@@ -228,16 +277,14 @@ const handlePublish = async () => {
     isPublishing.value = false
   }
 }
-
-const formatDate = (iso) => {
-  const d = new Date(iso)
-  return `${d.getMonth() + 1}月${d.getDate()}日 ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
-}
 </script>
 
 <style scoped>
 textarea::placeholder {
   font-family: serif;
   opacity: 0.5;
+}
+select {
+  outline: none;
 }
 </style>

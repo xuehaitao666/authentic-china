@@ -2,11 +2,14 @@ const { City, Experience, Resident, User } = require('../models');
 
 exports.getCityDetail = async (req, res) => {
   try {
-    const { name } = req.params;
+    let { name } = req.params;
     
+    // 归一化处理：去除行政后缀（如“市”、“盟”、“自治州”）以匹配数据库精简名
+    const cleanName = name.replace(/(市|盟|自治州|地区)$/, '');
+
     // 联合查出带有关联表（画卷、主家）的复合数据集
     const city = await City.findOne({
-      where: { name },
+      where: { name: cleanName },
       include: [
         {
           model: Experience,
@@ -69,3 +72,22 @@ exports.getCityDetail = async (req, res) => {
     res.status(500).json({ code: 500, message: '山高路远，画风断绝（数据库取卷失败）' });
   }
 }
+
+/**
+ * 获取所有城市列表 (用于发布动态时的选择器)
+ */
+exports.getAllCities = async (req, res) => {
+  try {
+    const cities = await City.findAll({
+      attributes: ['id', 'name', 'province'],
+      order: [['province', 'ASC'], ['name', 'ASC']]
+    });
+    res.status(200).json({
+      code: 200,
+      data: cities
+    });
+  } catch (error) {
+    console.error('获取城市列表异常：', error);
+    res.status(500).json({ code: 500, message: '府衙内籍册混乱，请稍后再试' });
+  }
+};

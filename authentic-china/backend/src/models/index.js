@@ -10,6 +10,8 @@ const Post = require('./Post');
 const Group = require('./Group');
 const GroupMember = require('./GroupMember');
 const GroupMessage = require('./GroupMessage');
+const PostLike = require('./PostLike');
+const PostComment = require('./PostComment');
 
 // User <-> Friendship
 User.hasMany(Friendship, { foreignKey: 'user_id', as: 'initiatedFriendships' });
@@ -57,6 +59,56 @@ Order.belongsTo(City, { foreignKey: 'city_id', as: 'city' });
 User.hasMany(Post, { foreignKey: 'user_id', as: 'stories' });
 Post.belongsTo(User, { foreignKey: 'user_id', as: 'author' });
 
+// City <-> Post
+City.hasMany(Post, { foreignKey: 'city_id', as: 'moments' });
+Post.belongsTo(City, { foreignKey: 'city_id', as: 'city' });
+
+// Post <-> PostLike
+Post.hasMany(PostLike, { foreignKey: 'post_id', as: 'likes', onDelete: 'CASCADE' });
+PostLike.belongsTo(Post, { foreignKey: 'post_id' });
+User.hasMany(PostLike, { foreignKey: 'user_id', as: 'postLikes' });
+PostLike.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// Post <-> PostComment
+Post.hasMany(PostComment, { foreignKey: 'post_id', as: 'comments', onDelete: 'CASCADE' });
+PostComment.belongsTo(Post, { foreignKey: 'post_id' });
+User.hasMany(PostComment, { foreignKey: 'user_id', as: 'postComments' });
+PostComment.belongsTo(User, { foreignKey: 'user_id', as: 'author' });
+
+// PostComment self-association (Multi-level replies)
+PostComment.hasMany(PostComment, { foreignKey: 'parent_id', as: 'replies', onDelete: 'CASCADE' });
+PostComment.belongsTo(PostComment, { foreignKey: 'parent_id', as: 'parent' });
+
+// --- Counter Cache Hooks ---
+const updatePostPerformance = async (postId) => {
+  const post = await Post.findByPk(postId);
+  if (post) {
+    // Simple Score Formula: Likes * 10 + Comments * 20
+    post.performance_score = (post.likes_count * 10) + (post.comments_count * 20);
+    await post.save();
+  }
+};
+
+// Likes Hooks
+PostLike.afterCreate(async (like) => {
+  await Post.increment('likes_count', { where: { id: like.post_id } });
+  await updatePostPerformance(like.post_id);
+});
+PostLike.afterDestroy(async (like) => {
+  await Post.decrement('likes_count', { where: { id: like.post_id } });
+  await updatePostPerformance(like.post_id);
+});
+
+// Comments Hooks
+PostComment.afterCreate(async (comment) => {
+  await Post.increment('comments_count', { where: { id: comment.post_id } });
+  await updatePostPerformance(comment.post_id);
+});
+PostComment.afterDestroy(async (comment) => {
+  await Post.decrement('comments_count', { where: { id: comment.post_id } });
+  await updatePostPerformance(comment.post_id);
+});
+
 // --- 新增: 雅集 (Group Chat) 关联 ---
 
 // User <-> Group (Creator)
@@ -89,6 +141,8 @@ module.exports = {
   Friendship,
   Message,
   Post,
+  PostLike,
+  PostComment,
   Group,
   GroupMember,
   GroupMessage

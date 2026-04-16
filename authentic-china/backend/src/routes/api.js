@@ -15,6 +15,7 @@ router.post('/auth/login', authController.login);
 router.patch('/auth/profile', authController.updateProfile);
 
 // 名城大观查阅通道
+router.get('/cities', cityController.getAllCities);
 router.get('/cities/:name', cityController.getCityDetail);
 
 // 飞书与知音系统栈
@@ -47,6 +48,11 @@ router.post('/upload/image', uploadController.uploadImage);
 // ========================
 router.post('/social/posts', postController.createPost);
 router.get('/social/posts', postController.getPosts);
+router.delete('/social/posts/:id', postController.deletePost);
+router.post('/social/posts/like', postController.toggleLike);
+router.post('/social/posts/comments', postController.addComment);
+router.get('/social/posts/:postId/comments', postController.getComments);
+router.delete('/social/comments/:id', postController.deleteComment);
 
 // ========================
 // Provincial Routes (卷轴舆地)

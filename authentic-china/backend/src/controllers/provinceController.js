@@ -15,17 +15,17 @@ const PROVINCE_ADCODE = {
 };
 
 const AUTHENTIC_CITIES = {
-  '西安市': { ancient_name: '长安', motto: '十三朝古都，梦回大唐盛世。' },
-  '宝鸡市': { ancient_name: '陈仓', motto: '明修栈道，暗度陈仓。' },
-  '汉中市': { ancient_name: '汉中', motto: '汉家发祥地，诸葛躬耕处。' },
-  '成都市': { ancient_name: '锦城', motto: '九天开出一成都，万户千门入画图。' },
-  '苏州市': { ancient_name: '姑苏', motto: '君到姑苏见，人家尽枕河。' },
-  '南京市': { ancient_name: '金陵', motto: '江南佳丽地，金陵帝王州。' },
-  '扬州市': { ancient_name: '广陵', motto: '二十四桥明月夜，玉人何处教吹箫。' },
-  '杭州市': { ancient_name: '临安', motto: '欲把西湖比西子，淡妆浓抹总相宜。' },
-  '广州市': { ancient_name: '羊城', motto: '云山珠水，岭南风骨。' },
-  '长沙市': { ancient_name: '潭州', motto: '惟楚有材，于斯为盛。' },
-  '武汉市': { ancient_name: '江城', motto: '烟雨莽苍苍，龟蛇锁大江。' },
+  '西安': { ancient_name: '长安', motto: '十三朝古都，梦回大唐盛世。' },
+  '宝鸡': { ancient_name: '陈仓', motto: '明修栈道，暗度陈仓。' },
+  '汉中': { ancient_name: '汉中', motto: '汉家发祥地，诸葛躬耕处。' },
+  '成都': { ancient_name: '锦城', motto: '九天开出一成都，万户千门入画图。' },
+  '苏州': { ancient_name: '姑苏', motto: '君到姑苏见，人家尽枕河。' },
+  '南京': { ancient_name: '金陵', motto: '江南佳丽地，金陵帝王州。' },
+  '扬州': { ancient_name: '广陵', motto: '二十四桥明月夜，玉人何处教吹箫。' },
+  '杭州': { ancient_name: '临安', motto: '欲把西湖比西子，淡妆浓抹总相宜。' },
+  '广州': { ancient_name: '羊城', motto: '云山珠水，岭南风骨。' },
+  '长沙': { ancient_name: '潭州', motto: '惟楚有材，于斯为盛。' },
+  '武汉': { ancient_name: '江城', motto: '烟雨莽苍苍，龟蛇锁大江。' },
 };
 
 exports.getGeoJSON = async (req, res) => {
@@ -54,9 +54,12 @@ exports.getProvinceCities = async (req, res) => {
 
     const cities = features.map(f => {
       const cityName = f.properties.name;
-      const meta = AUTHENTIC_CITIES[cityName] || { ancient_name: cityName.replace('市',''), motto: '神州大地，有缘再续烟火气。' };
+      // 归一化处理：去除行政后缀（如“市”、“盟”、“自治州”）以匹配数据库精简名
+      const cleanName = cityName.replace(/(市|盟|自治州|地区)$/, '');
+      
+      const meta = AUTHENTIC_CITIES[cleanName] || { ancient_name: cleanName, motto: '神州大地，有缘再续烟火气。' };
       return {
-        name: cityName,
+        name: cleanName,
         ancient_name: meta.ancient_name,
         motto: meta.motto,
         coords: f.properties.centroid || f.properties.center || [0, 0]

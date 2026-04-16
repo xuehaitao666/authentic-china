@@ -115,7 +115,55 @@
           </button>
         </div>
       </section>
-      
+
+      <!-- 城池动态区块 (新增：游客打卡与社交灵感) -->
+      <section class="mt-32">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 border-b border-ink-light/20 pb-4 gap-6">
+          <div class="flex items-end">
+            <h2 class="text-6xl font-serif text-ink-base mr-6 tracking-wide drop-shadow-sm">动态</h2>
+            <p class="text-ink-light tracking-[0.2em] text-sm mb-2 font-bold uppercase transition-colors">游客打卡 / CITY MOMENTS</p>
+          </div>
+          
+          <!-- 排序切换 -->
+          <div class="flex items-center bg-ink-light/5 p-1 rounded-full border border-ink-light/10">
+            <button 
+              @click="momentsSort = 'latest'; fetchMoments()"
+              class="px-6 py-2 rounded-full text-xs font-serif tracking-widest transition-all"
+              :class="momentsSort === 'latest' ? 'bg-[#2A2318] text-[#FAF8F5] shadow-md' : 'text-ink-light hover:text-ink-base'"
+            >
+              最新
+            </button>
+            <button 
+              @click="momentsSort = 'popular'; fetchMoments()"
+              class="px-6 py-2 rounded-full text-xs font-serif tracking-widest transition-all"
+              :class="momentsSort === 'popular' ? 'bg-[#2A2318] text-[#FAF8F5] shadow-md' : 'text-ink-light hover:text-ink-base'"
+            >
+              热门
+            </button>
+          </div>
+        </div>
+
+        <!-- 动态瀑布流 -->
+        <div v-if="isLoadingMoments" class="py-20 flex justify-center">
+          <div class="animate-spin inline-block w-8 h-8 rounded-full border-2 border-china-red/20 border-t-china-red"></div>
+        </div>
+        <div v-else-if="moments.length === 0" class="py-24 text-center group">
+          <div class="text-6xl mb-6 opacity-10 group-hover:opacity-20 transition-opacity grayscale">🏮</div>
+          <p class="font-serif text-ink-light/40 tracking-[0.3em] text-sm">此城尚无行者落笔，待君共创繁华。</p>
+        </div>
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <PostCard 
+            v-for="post in moments" 
+            :key="post.id" 
+            :post="post" 
+            :current-user="user"
+            :token="token"
+            @update="handlePostUpdate"
+            @delete="handleDeletePost"
+          />
+        </div>
+      </section>
+
     </div>
     
     <!-- 后端联通的挂壁抽屉核心组件 -->
@@ -135,15 +183,23 @@ import { getCityDetail } from '../api/city'
 import ContentCard from '../components/ContentCard.vue'
 import HostCard from '../components/HostCard.vue'
 import HostDrawer from '../components/HostDrawer.vue'
+import PostCard from '../components/PostCard.vue'
+import { getPosts, deletePost } from '../api/social'
+import { useAuth } from '../composables/useAuth'
 import { useFootprints } from '../composables/useFootprints'
 
 const route = useRoute()
 const { addHistory } = useFootprints()
+const { user, token } = useAuth()
 const isLoading = ref(true)
 const cityData = ref({})
 const scrollY = ref(0)
 const isDrawerOpen = ref(false)
 const selectedHost = ref(null)
+
+const moments = ref([])
+const momentsSort = ref('latest')
+const isLoadingMoments = ref(false)
 
 const groupedExperiences = computed(() => {
   const exps = cityData.value.experiences || []
@@ -163,6 +219,44 @@ const openHostDrawer = (host) => {
   isDrawerOpen.value = true
 }
 
+const fetchMoments = async () => {
+  if (!cityData.value.city_id) return
+  isLoadingMoments.value = true
+  try {
+    const res = await getPosts({
+      city_id: cityData.value.city_id,
+      sort: momentsSort.value,
+      limit: 10
+    }, token.value)
+    if (res.code === 200) {
+      moments.value = res.data.list
+    }
+  } catch (e) {
+    console.error('获取城市动态失败:', e)
+  } finally {
+    isLoadingMoments.value = false
+  }
+}
+
+const handlePostUpdate = (updatedPost) => {
+  const index = moments.value.findIndex(p => p.id === updatedPost.id)
+  if (index !== -1) {
+    moments.value[index] = updatedPost
+  }
+}
+
+const handleDeletePost = async (id) => {
+  if (!confirm('确定焚毁此锦囊？')) return
+  try {
+    const res = await deletePost(id, token.value)
+    if (res.code === 200) {
+      moments.value = moments.value.filter(p => p.id !== id)
+    }
+  } catch (e) {
+    console.error('删除动态失败:', e)
+  }
+}
+
 onMounted(async () => {
   window.addEventListener('scroll', handleScroll, { passive: true })
   const res = await getCityDetail(route.params.id)
@@ -177,6 +271,8 @@ onMounted(async () => {
         image: res.data.heroImage || '',
         subtitle: '城池名卷'
       })
+      // 异步加载本城动态
+      fetchMoments()
     }
   }
   isLoading.value = false

@@ -13,6 +13,11 @@ export const getCityDetail = async (cityName) => {
   }
 }
 
+export const getCities = async () => {
+  const { data } = await axios.get('http://localhost:3000/api/v1/cities');
+  return data;
+}
+
 // 真·后台预订账本请求
 export const submitOrder = async (orderData) => {
   try {
