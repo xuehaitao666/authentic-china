@@ -65,6 +65,10 @@
 
     <!-- 知音飞书组件挂载 -->
     <SocialDrawer :is-open="isSocialOpen" :pending-share="globalPendingShare" @close="isSocialOpen = false" @clear-share="globalPendingShare = null" />
+    
+    <!-- 国风小伴AI挂载 -->
+    <AIFloatingButton v-if="route.path !== '/'" />
+    <AIChatDrawer />
   </div>
 
   <!-- 全局水墨反馈层 -->
@@ -83,6 +87,8 @@ import SocialDrawer from './components/SocialDrawer.vue'
 import InkToast from './components/InkToast.vue'
 import FullInkSplash from './components/FullInkSplash.vue'
 import LogoutOverlay from './components/LogoutOverlay.vue'
+import AIFloatingButton from './components/common/AIFloatingButton.vue'
+import AIChatDrawer from './components/common/AIChatDrawer.vue'
 import { useToastStore } from './store/toast'
 
 const route = useRoute()

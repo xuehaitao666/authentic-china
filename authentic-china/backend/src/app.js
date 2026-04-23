@@ -5,6 +5,7 @@ const path = require('path');
 const { Server } = require('socket.io');
 
 const apiRoutes = require('./routes/api');
+const aiRoutes = require('./routes/ai');
 const { sequelize } = require('./models');
 const setupSocketIO = require('./socket');
 
@@ -19,6 +20,7 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 app.use('/api/v1', apiRoutes);
+app.use('/api/v1/ai', aiRoutes);
 
 // 初始化 Socket.IO 即时通讯核心
 const io = new Server(server, {
